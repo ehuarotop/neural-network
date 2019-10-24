@@ -60,8 +60,27 @@ def parser_initial_weights_file(initial_weights_file):
 
 	return network_weights
 
-def write_line_to_csv(csv_file, list_values):
-	with open(csv_file, mode='a') as csv_file:
+def format_datasets(csv_files):
+	for csv_file in csv_files:
+		if csv_file == 'datasets/wine.data':
+			lines = read_file(csv_file, delimiter=',')
+
+			for line in lines:
+				write_line_to_csv('datasets/wine_dataset_instances.txt',line[1:], 'a')
+				write_line_to_csv('datasets/wine_dataset_classes.txt', [line[0]], 'a')
+
+			a=open('datasets/wine_dataset_instances.txt','r').readlines()
+			b=open('datasets/wine_dataset_classes.txt','r').readlines()
+
+			print(len(a))
+			
+			with open('datasets/wine_dataset.txt','w') as out:
+			    for i in range(len(a)): #this is for just denoting the lines to join.
+			    	out.write(a[i].rstrip() + ';' + b[i])
+
+
+def write_line_to_csv(csv_file, list_values, mode):
+	with open(csv_file, mode=mode) as csv_file:
 		csv_writer = csv.writer(csv_file, delimiter=',', quotechar='"', quoting=csv.QUOTE_MINIMAL)
 		csv_writer.writerow(list_values)
 
