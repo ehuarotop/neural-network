@@ -4,15 +4,23 @@ import numpy as np
 import csv
 import os
 
-def get_data_from_csv(csv_file, sep):
+def get_data_from_txt(csv_file):
 	#reading dataset from csv
-	data = pd.read_csv(csv_file, sep)
+	#data = pd.read_csv(csv_file, sep)
+	lines = open(csv_file,'r').readlines()
 
-	#reading dataset descritpion from json file.
-	#with open(csv_file[:-4] + "-description.json") as desc_file:
-	#	data_desc = json.loads(desc_file.read())
+	inputs = []
+	outputs = []
 
-	return data, data_desc
+	for line in lines:
+		line = line[:-1]
+		line_parts = line.split(';')
+		instance, output = line_parts[0], line_parts[1]
+
+		inputs.append(instance.split(','))
+		outputs.append(output.split(','))
+
+	return pd.DataFrame(inputs), pd.DataFrame(outputs)
 
 def read_file(csv_file, delimiter=None):
 	lines = []
@@ -32,11 +40,14 @@ def parser_network_file(network_file):
 
 	#assigning the values to corresponding variables with the correct datatypes
 	reg_factor = float(lines[0][0])
-	n_inputs = int(lines[1][0])
-	n_neurons = int(lines[2][0])
-	n_outputs = int(lines[3][0])
 
-	return reg_factor, n_inputs, n_neurons, n_outputs
+	n_layers = []
+	
+	for layer in lines[1:]:
+		n_layer = int(layer[0])	
+		n_layers.append(n_layer)
+
+	return reg_factor, n_layers
 
 
 def parser_initial_weights_file(initial_weights_file):
