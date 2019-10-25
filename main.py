@@ -12,7 +12,8 @@ def main(network, initial_weights, dataset):
 	#parsing initial_weights.txt file to variables with the correct datatype. Last element of this list will be the output neuron
 	network_weights = Utils.parser_initial_weights_file(initial_weights)
 
-	#Utils.format_datasets(['datasets/wine.data'])
+	#Only in case we want to format or reformat the original datasets to txt format required by the professor.
+	#Utils.format_datasets(['datasets/pima.tsv', 'datasets/wine.data', 'datasets/ionosphere.data'])
 
 if __name__ == "__main__":
 	main()

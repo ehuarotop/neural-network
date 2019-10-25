@@ -61,22 +61,92 @@ def parser_initial_weights_file(initial_weights_file):
 	return network_weights
 
 def format_datasets(csv_files):
+	#removing any pre-existent txt files in datasets directory
+	os.system('rm ./datasets/*.txt')
+
 	for csv_file in csv_files:
 		if csv_file == 'datasets/wine.data':
+			#wine dataset
+
+			#reading lines from original csv file
 			lines = read_file(csv_file, delimiter=',')
 
+			#processing each line and obtained separated file for attributes and outputs.
 			for line in lines:
 				write_line_to_csv('datasets/wine_dataset_instances.txt',line[1:], 'a')
-				write_line_to_csv('datasets/wine_dataset_classes.txt', [line[0]], 'a')
+				if line[0] == '1':
+					write_line_to_csv('datasets/wine_dataset_classes.txt', ['1.0','0.0','0.0'], 'a')
+				elif line[0] == '2':
+					write_line_to_csv('datasets/wine_dataset_classes.txt', ['0.0','1.0','0.0'], 'a')
+				elif line[0] == '3':
+					write_line_to_csv('datasets/wine_dataset_classes.txt', ['0.0','0.0', '1.0'], 'a')
 
+			#Combining attributes and outputs files in the desired format.
 			a=open('datasets/wine_dataset_instances.txt','r').readlines()
 			b=open('datasets/wine_dataset_classes.txt','r').readlines()
-
-			print(len(a))
 			
 			with open('datasets/wine_dataset.txt','w') as out:
-			    for i in range(len(a)): #this is for just denoting the lines to join.
+			    for i in range(len(a)):
 			    	out.write(a[i].rstrip() + ';' + b[i])
+
+			#removing temporary files.
+			os.system('rm ./datasets/wine_dataset_instances.txt')
+			os.system('rm ./datasets/wine_dataset_classes.txt')
+
+		if csv_file == 'datasets/pima.tsv':
+			#pima dataset
+
+			#reading lines from the original tsv file
+			lines = read_file(csv_file, delimiter='	')
+
+			#removing the first line (headers)
+			lines = lines[1:]
+
+			for line in lines:
+				write_line_to_csv('datasets/pima_dataset_instances.txt',line[:-1], 'a')
+				
+				if line[-1] == '1':
+					write_line_to_csv('datasets/pima_dataset_classes.txt', ['1.0','0.0'], 'a')
+				elif line[-1] == '0':
+					write_line_to_csv('datasets/pima_dataset_classes.txt', ['0.0','1.0'], 'a')
+
+			#Combining attributes and outputs files in the desired format.
+			a=open('datasets/pima_dataset_instances.txt','r').readlines()
+			b=open('datasets/pima_dataset_classes.txt','r').readlines()
+			
+			with open('datasets/pima_dataset.txt','w') as out:
+			    for i in range(len(a)):
+			    	out.write(a[i].rstrip() + ';' + b[i])
+
+			#removing temporary files.
+			os.system('rm ./datasets/pima_dataset_instances.txt')
+			os.system('rm ./datasets/pima_dataset_classes.txt')
+
+		if csv_file == 'datasets/ionosphere.data':
+			#wine dataset
+
+			#reading lines from original csv file
+			lines = read_file(csv_file, delimiter=',')
+
+			#processing each line and obtained separated file for attributes and outputs.
+			for line in lines:
+				write_line_to_csv('datasets/ionosphere_dataset_instances.txt',line[:-1], 'a')
+				if line[-1] == 'g':
+					write_line_to_csv('datasets/ionosphere_dataset_classes.txt', ['1.0','0.0'], 'a')
+				elif line[-1] == 'b':
+					write_line_to_csv('datasets/ionosphere_dataset_classes.txt', ['0.0','1.0'], 'a')
+
+			#Combining attributes and outputs files in the desired format.
+			a=open('datasets/ionosphere_dataset_instances.txt','r').readlines()
+			b=open('datasets/ionosphere_dataset_classes.txt','r').readlines()
+			
+			with open('datasets/ionosphere_dataset.txt','w') as out:
+			    for i in range(len(a)):
+			    	out.write(a[i].rstrip() + ';' + b[i])
+
+			#removing temporary files.
+			os.system('rm ./datasets/ionosphere_dataset_instances.txt')
+			os.system('rm ./datasets/ionosphere_dataset_classes.txt')
 
 
 def write_line_to_csv(csv_file, list_values, mode):
