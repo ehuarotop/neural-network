@@ -36,13 +36,14 @@ class NeuralNetwork:
 		self.layers = getInitialLayers(n_layers)
 		self.inputs = inputs
 		self.outputs = outputs
-		self.alpha = 0.005
+		self.alpha = 0.1
+		self.stop = False
+		self.stop_criteria = 0.0005
 
 
 	def propagateInstance(self, instance):
 		#Instantiating activations (plus bias) for the first layer (input layer)
 		self.layers[0].activations = np.insert(np.array([instance.values]), 0, 1.0, axis=1).T
-		#print(self.layers[0].activations.shape)
 
 		for index, layer in enumerate(self.layers):
 			#Calculating propagation
@@ -81,19 +82,23 @@ class NeuralNetwork:
 		return error
 
 	def backPropagateNetwork(self, meanOutputLayerError):
-		#Getting outputs in the correct format used in this implementation
-		#outputs = np.array([outputs.values]).T
 
-		#Assigning deltas to output layer
-		#self.layers[-1].deltas = np.add(self.layers[-1].activations, -outputs)
 		self.layers[-1].deltas = meanOutputLayerError
 
 		#reverse indexing excluding the output layer
 		for index in range(len(self.layers)-2, 0, -1):
-			weighted_deltas = np.dot(self.layers[index+1].weights.T, self.layers[index+1].deltas)
+			#removing bias neuron for deltas in order to do multiplication when n_layer >= 4
+			if(len(self.layers)) > 3 and index != (len(self.layers)-2):
+				deltas_current_layer = np.array([self.layers[index+1].deltas.T[0][1:]]).T
+			else:
+				deltas_current_layer = self.layers[index+1].deltas
+
+			#weighted_deltas = np.dot(self.layers[index+1].weights.T, self.layers[index+1].deltas)
+			weighted_deltas = np.dot(self.layers[index+1].weights.T, deltas_current_layer)
 			layer_activations = np.multiply(self.layers[index].activations, 1 - self.layers[index].activations)
 			
 			self.layers[index].deltas = np.multiply(weighted_deltas, layer_activations)
+			print('deltas-layer' + str(index+1), self.layers[index].deltas)
 
 		#Calculate gradients for weights
 		for index,layer in enumerate(self.layers):
@@ -103,8 +108,7 @@ class NeuralNetwork:
 				if index != len(self.layers)-1:
 					layer.gradients = layer.gradients[1:]
 
-				#updating weights
-				layer.weights = layer.weights - self.alpha * layer.gradients
+				#print('gradients' + str(index+1) , layer.gradients)
 
 	def getRegularizedOutputLayerError(self, meanOutputLayerError):
 		regularizedError = 0.0
@@ -130,6 +134,7 @@ class NeuralNetwork:
 		for index, instance in self.inputs.iterrows():
 			#getting J (cost function) for the current instance
 			error = self.propagateInstanceAndGetOutputLayerError(instance, self.layers[-1], self.outputs.iloc[index])
+			print('erro J ' + str(index+1), error)
 
 			#Adding the J (cost function) for the current instance to the output_layer_errors variable
 			J += error
@@ -138,46 +143,61 @@ class NeuralNetwork:
 		J_mean = J / self.inputs.shape[0]
 		regularizedError = self.getRegularizedOutputLayerError(J_mean)
 
+		return regularizedError
+
 	def backPropagation(self):
 
 		#Getting first regularized cost
-		regularized_J = self.getRegularized_J()
+		#regularized_J = self.getRegularized_J()
+
+		total_gradients = []
+
+		for index, layer in enumerate(self.layers):
+			if index == 0:
+				total_gradients.append(None)
+			else:
+				total_gradients.append(np.zeros((layer.weights.shape)))
 
 		############################# Iterating over backpropagation #############################
-
-		for iteration in range(1000):
+		for iteration in range(1):
+			#if not self.stop:
 			#Printing count for current iteration
 			print("Iteration # " + str(iteration + 1))
 
 			for index, instance in self.inputs.iterrows():
 				#Propagating the instance
 				self.propagateInstance(instance)
+				print('propagation ' + str(index+1), self.layers[-1].activations)
+
+				print('saida esperada' + str(index+1), np.array([self.outputs.iloc[index].values]).T)
 
 				#getting deltas for the output layer
-				delta_output_layer = np.add(self.layers[-1].activations, -np.array([self.outputs.iloc[index]]))
-
+				delta_output_layer = np.add(self.layers[-1].activations, -np.array([self.outputs.iloc[index].values]).T)
+				print('erro na saida' + str(index+1), delta_output_layer)
+				
 				self.backPropagateNetwork(delta_output_layer)
 
+				for index, layer in enumerate(self.layers):
+					if index != 0:
+						total_gradients[index] = np.add(total_gradients[index], layer.gradients)
 
-		####################### Iterating backPropagation until some stop criteria were achieved #################
-		#while np.mean(regularizedError > 0.5):
-		#	iteration += 1
-		#	print("Iteratingion # " + str(iteration))
-#
-			####################### Back propagating instances ###############################
-#			self.backPropagateNetwork(meanOutputLayerError)
+				print('------------------------------------------------------')
 
-#			output_layer_errors = np.zeros((self.layers[-1].n_neurons, 1))
+			for index, layer in enumerate(self.layers):
+				if index != 0:
+					layer.gradients = total_gradients[index] / self.inputs.shape[0]
+					print('final_gradients', layer.gradients)
 
-#			for index, instance in self.inputs.iterrows():
-				#getting J (total error)
-#				errors = self.propagateInstanceAndGetOutputLayerError(instance, self.layers[-1], self.outputs.iloc[index])
+					#updating weights
+					layer.weights = layer.weights - self.alpha * layer.gradients
 
-				#Adding these errors to output_layer_errors
-#				output_layer_errors = np.add(output_layer_errors, errors)
+			new_regularized_J = self.getRegularized_J()
+			print('J total do dataset', new_regularized_J)
 
-			#getting the mean error for each neuron on the output layer.
-#			meanOutputLayerError = np.divide(output_layer_errors, self.inputs.shape[0])
-#			regularizedError = self.getRegularizedOutputLayerError(meanOutputLayerError)
-#			print(regularizedError)
+				#print(regularized_J, new_regularized_J)
+
+				#if regularized_J - new_regularized_J < self.stop_criteria:
+				#	self.stop = True
+				#else:
+				#	regularized_J = new_regularized_J
 

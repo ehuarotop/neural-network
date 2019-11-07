@@ -24,15 +24,6 @@ def main(network, initial_weights, dataset):
 
 	neural_network.backPropagation()
 
-	#print('Testing instance')
-	#print(inputs.iloc[0])
-	#print('Output')
-	#print(outputs.iloc[0])
-
-	#a = neural_network.propagateInstance(inputs.iloc[0])
-	#print(a)
-	#neural_network.backPropagateInstance(inputs.iloc[0], outputs.iloc[0])
-
 	#Only in case we want to format or reformat the original datasets to txt format required by the professor.
 	#Utils.format_datasets(['datasets/pima.tsv', 'datasets/wine.data', 'datasets/ionosphere.data'])
 
