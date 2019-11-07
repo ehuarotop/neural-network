@@ -61,7 +61,7 @@ class NeuralNetwork:
 				if layer.type is not 'output':
 					layer.activations = np.insert(layer.activations, 0, 1.0, axis=0)
 
-		return self.layers[-1].activations
+		#return self.layers[-1].activations
 
 	def calculateErrorOutputLayer(self, output_layer, instance_outputs):
 		#Function to calculate error of a instance in a network with multiple outputs
@@ -70,15 +70,15 @@ class NeuralNetwork:
 		output_layer_activations = output_layer.activations 			#np.array(column vector)
 		real_outputs = np.array([instance_outputs.values]).T 			#np.array(column vector)
 
-		#errors = np.sum(np.add(np.multiply(-real_outputs, np.log(output_layer_activations)),
-		#				np.multiply(-(1-real_outputs), np.log(1-output_layer_activations))))
+		error = np.sum(np.add(np.multiply(-real_outputs, np.log(output_layer_activations)),
+						np.multiply(-(1-real_outputs), np.log(1-output_layer_activations))))
 
-		errors = np.add(np.multiply(-real_outputs, np.log(output_layer_activations)),
-						np.multiply(-(1-real_outputs), np.log(1-output_layer_activations)))
+		#errors = np.add(np.multiply(-real_outputs, np.log(output_layer_activations)),
+		#				np.multiply(-(1-real_outputs), np.log(1-output_layer_activations)))
 
 		#total_error = np.sum(errors)
 
-		return errors
+		return error
 
 	def backPropagateNetwork(self, meanOutputLayerError):
 		#Getting outputs in the correct format used in this implementation
@@ -106,7 +106,7 @@ class NeuralNetwork:
 				#updating weights
 				layer.weights = layer.weights - self.alpha * layer.gradients
 
-	def getRegularizedOutputLayerError(self, outputLayerError):
+	def getRegularizedOutputLayerError(self, meanOutputLayerError):
 		regularizedError = 0.0
 		
 		for index, layer in enumerate(self.layers):
@@ -115,34 +115,48 @@ class NeuralNetwork:
 
 		regularizedError = regularizedError*self.reg_factor/(2*self.inputs.shape[0])
 
+		regularizedError = meanOutputLayerError + regularizedError
+
 		return regularizedError
 
 	def propagateInstanceAndGetOutputLayerError(self, instance, output_layer, instance_output):
 		self.propagateInstance(instance)
 		return self.calculateErrorOutputLayer(self.layers[-1], instance_output)
 
+	def getRegularized_J(self):
+		############################# Gettting regularized cost ############################# 
+		J = 0.0
+
+		for index, instance in self.inputs.iterrows():
+			#getting J (cost function) for the current instance
+			error = self.propagateInstanceAndGetOutputLayerError(instance, self.layers[-1], self.outputs.iloc[index])
+
+			#Adding the J (cost function) for the current instance to the output_layer_errors variable
+			J += error
+
+		#getting the mean error for each neuron on the output layer.
+		J_mean = J / self.inputs.shape[0]
+		regularizedError = self.getRegularizedOutputLayerError(J_mean)
+
 	def backPropagation(self):
 
-		for iteration in range(1000):
-			iteration += 1
-			################### Propagating inputs over the neural network for the first time #####################
-			print("Iteration # " + str(iteration))
+		#Getting first regularized cost
+		regularized_J = self.getRegularized_J()
 
-			output_layer_errors = np.zeros((self.layers[-1].n_neurons, 1))
+		############################# Iterating over backpropagation #############################
+
+		for iteration in range(1000):
+			#Printing count for current iteration
+			print("Iteration # " + str(iteration + 1))
 
 			for index, instance in self.inputs.iterrows():
-				#getting J (total error)
-				errors = self.propagateInstanceAndGetOutputLayerError(instance, self.layers[-1], self.outputs.iloc[index])
+				#Propagating the instance
+				self.propagateInstance(instance)
 
-				#Adding these errors to output_layer_errors
-				output_layer_errors = np.add(output_layer_errors, errors)
+				#getting deltas for the output layer
+				delta_output_layer = np.add(self.layers[-1].activations, -np.array([self.outputs.iloc[index]]))
 
-			#getting the mean error for each neuron on the output layer.
-			meanOutputLayerError = np.divide(output_layer_errors, self.inputs.shape[0])
-			regularizedError = self.getRegularizedOutputLayerError(meanOutputLayerError)
-			print(regularizedError)
-
-			self.backPropagateNetwork(meanOutputLayerError)
+				self.backPropagateNetwork(delta_output_layer)
 
 
 		####################### Iterating backPropagation until some stop criteria were achieved #################
