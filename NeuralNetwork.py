@@ -36,7 +36,7 @@ class NeuralNetwork:
 		self.layers = getInitialLayers(n_layers)
 		self.inputs = inputs
 		self.outputs = outputs
-		self.alpha = 0.1
+		self.alpha = 0.0
 		self.stop = False
 		self.stop_criteria = 0.0005
 
@@ -74,11 +74,6 @@ class NeuralNetwork:
 		error = np.sum(np.add(np.multiply(-real_outputs, np.log(output_layer_activations)),
 						np.multiply(-(1-real_outputs), np.log(1-output_layer_activations))))
 
-		#errors = np.add(np.multiply(-real_outputs, np.log(output_layer_activations)),
-		#				np.multiply(-(1-real_outputs), np.log(1-output_layer_activations)))
-
-		#total_error = np.sum(errors)
-
 		return error
 
 	def backPropagateNetwork(self, meanOutputLayerError):
@@ -108,18 +103,23 @@ class NeuralNetwork:
 				if index != len(self.layers)-1:
 					layer.gradients = layer.gradients[1:]
 
-				#print('gradients' + str(index+1) , layer.gradients)
+				print('gradients' + str(index+1) , layer.gradients)
 
 	def getRegularizedOutputLayerError(self, meanOutputLayerError):
 		regularizedError = 0.0
 		
 		for index, layer in enumerate(self.layers):
 			if index != 0:
-				regularizedError += np.sum(np.square(layer.weights))
+				#Setting bias element to zero
+				weights = np.copy(layer.weights)
+				weights[:,0] = 0
+
+				#accumulating errors in variable regularizedError
+				regularizedError += np.sum(np.square(weights))
 
 		regularizedError = regularizedError*self.reg_factor/(2*self.inputs.shape[0])
 
-		regularizedError = meanOutputLayerError + regularizedError
+		regularizedError += meanOutputLayerError
 
 		return regularizedError
 
@@ -183,13 +183,27 @@ class NeuralNetwork:
 
 				print('------------------------------------------------------')
 
+			print('------------------ Dataset Completado ------------------')
+
 			for index, layer in enumerate(self.layers):
 				if index != 0:
-					layer.gradients = total_gradients[index] / self.inputs.shape[0]
-					print('final_gradients', layer.gradients)
+					#Getting a copy of the weights for the current layer
+					weights = np.copy(layer.weights)
+					#setting bias column to zero (regularization does not consider bias)
+					weights[:,0] = 0
+					#applying regularization factor over the weights array
+					weights = weights*self.reg_factor
 
-					#updating weights
-					layer.weights = layer.weights - self.alpha * layer.gradients
+					#getting regularized gradients (from total_gradients):
+					regularized_gradients = np.add(total_gradients[index], weights) / self.inputs.shape[0]
+
+					#assigning the regularized gradients to layer.gradients
+					layer.gradients = regularized_gradients
+
+					print('regularized gradients' + str(index+1), regularized_gradients)
+
+					#updating weights according to the calculated gradients
+					#layer.weights = layer.weights - self.alpha * layer.gradients
 
 			new_regularized_J = self.getRegularized_J()
 			print('J total do dataset', new_regularized_J)
