@@ -215,3 +215,93 @@ class NeuralNetwork:
 				#else:
 				#	regularized_J = new_regularized_J
 
+
+	def numerical_verification(self, weights, epsilon):
+		#Getting a copy of the weights for the current layer
+		weights_copy = np.copy(weights)
+		
+		#setting bias column to zero (regularization does not consider bias)
+		#weights[:,0] = 0
+
+		rows, cols = weights.shape
+
+		numeric_gradients = np.zeros(weights.shape)
+
+		for row in range(rows):
+			for col in range(cols):
+				current_weight = weights[row][col]
+
+				weights[row][col] = current_weight + epsilon
+				regularized_J_plus_eps = self.getRegularized_J()
+
+				weights[row][col] = current_weight - epsilon
+				regularized_J_minus_eps = self.getRegularized_J()
+
+				numeric_gradients[row][col] = (regularized_J_plus_eps - regularized_J_minus_eps) / (2*epsilon)
+
+				weights[row][col] = weights_copy[row][col]
+
+		return numeric_gradients
+
+
+	def simplebackPropagationForNumericVerification(self):
+
+		total_gradients = []
+
+		for index, layer in enumerate(self.layers):
+			if index == 0:
+				total_gradients.append(None)
+			else:
+				total_gradients.append(np.zeros((layer.weights.shape)))
+
+		############################# Iterating over backpropagation #############################
+		for index, instance in self.inputs.iterrows():
+			#Propagating the instance
+			self.propagateInstance(instance)
+			print('propagation ' + str(index+1), self.layers[-1].activations)
+
+			print('saida esperada' + str(index+1), np.array([self.outputs.iloc[index].values]).T)
+
+			#getting deltas for the output layer
+			delta_output_layer = np.add(self.layers[-1].activations, -np.array([self.outputs.iloc[index].values]).T)
+			print('erro na saida' + str(index+1), delta_output_layer)
+			
+			self.backPropagateNetwork(delta_output_layer)
+
+			for index, layer in enumerate(self.layers):
+				if index != 0:
+					total_gradients[index] = np.add(total_gradients[index], layer.gradients)
+
+			print('------------------------------------------------------')
+
+		print('------------------ Dataset Completado ------------------')
+
+		for index, layer in enumerate(self.layers):
+			if index != 0:
+				#performing numerical verification
+				numerical_gradients = self.numerical_verification(layer.weights, 0.00001)
+
+				#Getting a copy of the weights for the current layer
+				weights = np.copy(layer.weights)
+				
+				#setting bias column to zero (regularization does not consider bias)
+				weights[:,0] = 0
+
+				#applying regularization factor over the weights array
+				weights = weights*self.reg_factor
+
+				#getting regularized gradients (from total_gradients):
+				regularized_gradients = np.add(total_gradients[index], weights) / self.inputs.shape[0]
+
+				#assigning the regularized gradients to layer.gradients
+				layer.gradients = regularized_gradients
+
+				print('regularized gradients' + str(index+1), regularized_gradients)
+				print('numerical gradients' + str(index+1), numerical_gradients)
+
+				#updating weights according to the calculated gradients
+				#layer.weights = layer.weights - self.alpha * layer.gradients
+
+		new_regularized_J = self.getRegularized_J()
+		print('J total do dataset', new_regularized_J)
+
