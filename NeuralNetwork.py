@@ -14,7 +14,7 @@ class Layer:
 		self.deltas = np.zeros((self.n_neurons,1))
 
 class NeuralNetwork:
-	def __init__(self, reg_factor, n_layers, initial_weights, inputs, outputs):
+	def __init__(self, reg_factor, n_layers, initial_weights, inputs, outputs, verbose):
 		
 		def getInitialLayers(n_layers):
 			layers = []
@@ -31,7 +31,7 @@ class NeuralNetwork:
 
 			return layers
 
-
+		self.network_structure = n_layers
 		self.reg_factor = reg_factor
 		self.layers = getInitialLayers(n_layers)
 		self.inputs = inputs
@@ -39,11 +39,14 @@ class NeuralNetwork:
 		self.alpha = 0.0
 		self.stop = False
 		self.stop_criteria = 0.0005
+		self.verbose = verbose
 
 
-	def propagateInstance(self, instance):
+	def propagateInstance(self, instance, verbose):
 		#Instantiating activations (plus bias) for the first layer (input layer)
 		self.layers[0].activations = np.insert(np.array([instance.values]), 0, 1.0, axis=1).T
+		if verbose:
+			print('\t\ta1: ', self.layers[0].activations.T[0])
 
 		for index, layer in enumerate(self.layers):
 			#Calculating propagation
@@ -55,12 +58,16 @@ class NeuralNetwork:
 				in his transpose form in order to maintain the operation fixed.
 				'''
 				layer.activations = np.dot(layer.weights, self.layers[index-1].activations)
+				if verbose:
+					print('\t\tz'+str(index+1)+': ', layer.activations.T[0])
 
 				layer.activations = apply_sigmoid_function(layer.activations)
 
 				#adding bias to the layer just calculated (if not output layer)
 				if layer.type is not 'output':
 					layer.activations = np.insert(layer.activations, 0, 1.0, axis=0)
+					if verbose:
+						print('\t\ta'+str(index+1)+': ', layer.activations.T[0])
 
 		#return self.layers[-1].activations
 
@@ -76,9 +83,11 @@ class NeuralNetwork:
 
 		return error
 
-	def backPropagateNetwork(self, meanOutputLayerError):
+	def backPropagateNetwork(self, meanOutputLayerError, verbose):
 
 		self.layers[-1].deltas = meanOutputLayerError
+		if verbose:
+			print('\t\tdelta4: ', self.layers[-1].deltas.T[0])
 
 		#reverse indexing excluding the output layer
 		for index in range(len(self.layers)-2, 0, -1):
@@ -93,7 +102,8 @@ class NeuralNetwork:
 			layer_activations = np.multiply(self.layers[index].activations, 1 - self.layers[index].activations)
 			
 			self.layers[index].deltas = np.multiply(weighted_deltas, layer_activations)
-			print('deltas-layer' + str(index+1), self.layers[index].deltas)
+			if verbose:
+				print('\t\tdelta'+str(index+1)+': ', self.layers[index].deltas.T[0][1:])
 
 		#Calculate gradients for weights
 		for index,layer in enumerate(self.layers):
@@ -103,7 +113,10 @@ class NeuralNetwork:
 				if index != len(self.layers)-1:
 					layer.gradients = layer.gradients[1:]
 
-				print('gradients' + str(index+1) , layer.gradients)
+				if verbose:
+					print('\t\tGradients for Theta' + str(index))
+					for gradient in layer.gradients:
+						print('\t\t\t' + str(gradient))
 
 	def getRegularizedOutputLayerError(self, meanOutputLayerError):
 		regularizedError = 0.0
@@ -123,18 +136,18 @@ class NeuralNetwork:
 
 		return regularizedError
 
-	def propagateInstanceAndGetOutputLayerError(self, instance, output_layer, instance_output):
-		self.propagateInstance(instance)
+	def propagateInstanceAndGetOutputLayerError(self, instance, output_layer, instance_output, verbose):
+		self.propagateInstance(instance, verbose)
 		return self.calculateErrorOutputLayer(self.layers[-1], instance_output)
 
-	def getRegularized_J(self):
+	def getRegularized_J(self, verbose):
 		############################# Gettting regularized cost ############################# 
 		J = 0.0
 
 		for index, instance in self.inputs.iterrows():
 			#getting J (cost function) for the current instance
-			error = self.propagateInstanceAndGetOutputLayerError(instance, self.layers[-1], self.outputs.iloc[index])
-			print('erro J ' + str(index+1), error)
+			error = self.propagateInstanceAndGetOutputLayerError(instance, self.layers[-1], self.outputs.iloc[index],verbose)
+			#print('erro J ' + str(index+1), error)
 
 			#Adding the J (cost function) for the current instance to the output_layer_errors variable
 			J += error
@@ -166,16 +179,17 @@ class NeuralNetwork:
 
 			for index, instance in self.inputs.iterrows():
 				#Propagating the instance
-				self.propagateInstance(instance)
-				print('propagation ' + str(index+1), self.layers[-1].activations)
+				self.propagateInstance(instance, False)
+				
+				#print('Predicted output Example ' + str(index+1), self.layers[-1].activations)
 
-				print('saida esperada' + str(index+1), np.array([self.outputs.iloc[index].values]).T)
+				#print('Expected output Example ' + str(index+1), np.array([self.outputs.iloc[index].values]).T)
 
 				#getting deltas for the output layer
 				delta_output_layer = np.add(self.layers[-1].activations, -np.array([self.outputs.iloc[index].values]).T)
 				print('erro na saida' + str(index+1), delta_output_layer)
 				
-				self.backPropagateNetwork(delta_output_layer)
+				self.backPropagateNetwork(delta_output_layer, False)
 
 				for index, layer in enumerate(self.layers):
 					if index != 0:
@@ -205,16 +219,8 @@ class NeuralNetwork:
 					#updating weights according to the calculated gradients
 					#layer.weights = layer.weights - self.alpha * layer.gradients
 
-			new_regularized_J = self.getRegularized_J()
+			new_regularized_J = self.getRegularized_J(False)
 			print('J total do dataset', new_regularized_J)
-
-				#print(regularized_J, new_regularized_J)
-
-				#if regularized_J - new_regularized_J < self.stop_criteria:
-				#	self.stop = True
-				#else:
-				#	regularized_J = new_regularized_J
-
 
 	def numerical_verification(self, weights, epsilon):
 		#Getting a copy of the weights for the current layer
@@ -232,10 +238,10 @@ class NeuralNetwork:
 				current_weight = weights[row][col]
 
 				weights[row][col] = current_weight + epsilon
-				regularized_J_plus_eps = self.getRegularized_J()
+				regularized_J_plus_eps = self.getRegularized_J(False)
 
 				weights[row][col] = current_weight - epsilon
-				regularized_J_minus_eps = self.getRegularized_J()
+				regularized_J_minus_eps = self.getRegularized_J(False)
 
 				numeric_gradients[row][col] = (regularized_J_plus_eps - regularized_J_minus_eps) / (2*epsilon)
 
@@ -243,8 +249,38 @@ class NeuralNetwork:
 
 		return numeric_gradients
 
-
 	def simplebackPropagationForNumericVerification(self):
+
+		def printNetworkWeights():
+			for index, layer in enumerate(self.layers):
+				if index != 0:
+					print('Tethas 0' + str(index))
+					print('')
+					print(layer.weights)
+					print('')
+
+		def printTrainingSet():
+			for index, instance in self.inputs.iterrows():
+				print('Example ' + str(index+1))
+				print('x: ', list(instance))
+				print('y: ', list(self.outputs.iloc[index]))
+				print('')
+
+		print('Numerical Verification for Backpropagation Algorithm')
+		print('=====================================================')
+
+		print('Regularization parameter ("λ"): ' + str(self.reg_factor))
+		print('Network Layers structure: ' + str(self.network_structure))
+		print('')
+
+		#Printing weights for each layer (except for input layer)
+		printNetworkWeights()
+
+		print('Training Set')
+		printTrainingSet()
+
+		print('------------------------------------------------------')
+		print('Calculating network error J')
 
 		total_gradients = []
 
@@ -256,25 +292,30 @@ class NeuralNetwork:
 
 		############################# Iterating over backpropagation #############################
 		for index, instance in self.inputs.iterrows():
-			#Propagating the instance
-			self.propagateInstance(instance)
-			print('propagation ' + str(index+1), self.layers[-1].activations)
+			print('\tProcessing example # ' + str(index+1))
 
-			print('saida esperada' + str(index+1), np.array([self.outputs.iloc[index].values]).T)
+			#Propagating the instance
+			print('\tPropagating instance ' + str(list(instance)))
+			#self.propagateInstance(instance, True)
+			J_example = self.propagateInstanceAndGetOutputLayerError(instance, self.layers[-1], self.outputs.iloc[index],True)
+
+			print('\tPredicted output Example: ' + str(index+1), self.layers[-1].activations.T[0])
+			print('\tExpected output Example : ' + str(index+1), np.array([self.outputs.iloc[index].values][0]))
+			print('\tJ for Example ' + str(index+1) + ': ', J_example)
 
 			#getting deltas for the output layer
 			delta_output_layer = np.add(self.layers[-1].activations, -np.array([self.outputs.iloc[index].values]).T)
-			print('erro na saida' + str(index+1), delta_output_layer)
+			#print('erro na saida' + str(index+1), delta_output_layer)
 			
-			self.backPropagateNetwork(delta_output_layer)
+			#print('Executing Backpropagation for Example ' + str(index+1))
+			print('\tCalculating gradients based on example ' + str(index+1))
+			self.backPropagateNetwork(delta_output_layer, True)
 
 			for index, layer in enumerate(self.layers):
 				if index != 0:
 					total_gradients[index] = np.add(total_gradients[index], layer.gradients)
 
-			print('------------------------------------------------------')
-
-		print('------------------ Dataset Completado ------------------')
+		print('\nDataset processed completely. Calculating regularized gradients\n')
 
 		for index, layer in enumerate(self.layers):
 			if index != 0:
@@ -296,12 +337,13 @@ class NeuralNetwork:
 				#assigning the regularized gradients to layer.gradients
 				layer.gradients = regularized_gradients
 
-				print('regularized gradients' + str(index+1), regularized_gradients)
-				print('numerical gradients' + str(index+1), numerical_gradients)
+				print('\tFinal gradients for Theta' + str(index) + ' (with regularization)')
+				for gradient in layer.gradients:
+					print('\t\t' + str(gradient))
+				print('\tGradients calculated numerically for Theta' + str(index))
+				for num_gradient in numerical_gradients:
+					print('\t\t' + str(num_gradient))
 
-				#updating weights according to the calculated gradients
-				#layer.weights = layer.weights - self.alpha * layer.gradients
-
-		new_regularized_J = self.getRegularized_J()
+		new_regularized_J = self.getRegularized_J(False)
 		print('J total do dataset', new_regularized_J)
 
