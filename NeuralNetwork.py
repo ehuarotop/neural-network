@@ -37,9 +37,10 @@ class NeuralNetwork:
 		self.layers = getInitialLayers(n_layers)
 		self.inputs = inputs
 		self.outputs = outputs
-		self.alpha = 0.1
+		self.alpha = 0.01
 		self.stop = False
 		self.stop_criteria = 0.0005
+		self.batch_size = 50
 		self.verbose = verbose
 
 
@@ -178,39 +179,56 @@ class NeuralNetwork:
 			#Printing count for current iteration
 			print("Iteration # " + str(iteration + 1))
 
-			for index, instance in self.inputs.iterrows():
-				#Propagating the instance
-				self.propagateInstance(instance, False)
+			#Getting batches
+			batches = []
+			n_batches = self.inputs.shape[0] // self.batch_size
+			init = 0
+			end = init + self.batch_size
 
-				#getting deltas for the output layer
-				delta_output_layer = np.add(self.layers[-1].activations, -np.array([self.outputs.iloc[index].values]).T)
+			for i in range(n_batches+1):
+				if i == n_batches:
+					batch = self.inputs.iloc[init:]
+				else:
+					batch = self.inputs.iloc[init:end]
 				
-				self.backPropagateNetwork(delta_output_layer, False)
+				batches.append(batch)
+				init = end
+				end += self.batch_size
+
+			for batch in batches:
+				for index, instance in batch.iterrows(): #self.inputs.iterrows()
+					#Propagating the instance
+					self.propagateInstance(instance, False)
+
+					#getting deltas for the output layer
+					delta_output_layer = np.add(self.layers[-1].activations, -np.array([self.outputs.iloc[index].values]).T)
+					
+					self.backPropagateNetwork(delta_output_layer, False)
+
+					for index, layer in enumerate(self.layers):
+						if index != 0:
+							total_gradients[index] = np.add(total_gradients[index], layer.gradients)
 
 				for index, layer in enumerate(self.layers):
 					if index != 0:
-						total_gradients[index] = np.add(total_gradients[index], layer.gradients)
+						#Getting a copy of the weights for the current layer
+						weights = np.copy(layer.weights)
+						#setting bias column to zero (regularization does not consider bias)
+						weights[:,0] = 0
+						#applying regularization factor over the weights array
+						weights = weights*self.reg_factor
 
-			for index, layer in enumerate(self.layers):
-				if index != 0:
-					#Getting a copy of the weights for the current layer
-					weights = np.copy(layer.weights)
-					#setting bias column to zero (regularization does not consider bias)
-					weights[:,0] = 0
-					#applying regularization factor over the weights array
-					weights = weights*self.reg_factor
+						#getting regularized gradients (from total_gradients):
+						regularized_gradients = np.add(total_gradients[index], weights) / self.inputs.shape[0]
 
-					#getting regularized gradients (from total_gradients):
-					regularized_gradients = np.add(total_gradients[index], weights) / self.inputs.shape[0]
+						#assigning the regularized gradients to layer.gradients
+						layer.gradients = regularized_gradients
 
-					#assigning the regularized gradients to layer.gradients
-					layer.gradients = regularized_gradients
+						#updating weights according to the calculated gradients ######UPDATING WEIGHTS
+						layer.weights = layer.weights - self.alpha * layer.gradients
 
-					#updating weights according to the calculated gradients ######UPDATING WEIGHTS
-					layer.weights = layer.weights - self.alpha * layer.gradients
-
-			new_regularized_J = self.getRegularized_J(False)
-			#print('Final J for dataset', new_regularized_J)
+				new_regularized_J = self.getRegularized_J(False)
+				print('Final J for dataset', new_regularized_J)
 
 	def predict(self, instances):
 		predictions = []
@@ -222,6 +240,7 @@ class NeuralNetwork:
 
 			maximum = 0
 			max_index = 0
+			
 			for index, predicted_proba in enumerate(predicted_probabilities):
 				if predicted_proba[0] > maximum:
 					maximum = predicted_proba[0]
