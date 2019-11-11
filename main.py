@@ -18,11 +18,12 @@ def main(network, initial_weights, dataset):
 
 	#converting datasets to numeric from string
 	inputs = inputs.apply(pd.to_numeric)
+	#Performing data normalization
+	inputs = Utils.apply_standard_score(inputs)
+
 	outputs = outputs.apply(pd.to_numeric)
 
-	neural_network = nn(reg_factor, n_layers, network_weights, inputs, outputs)
-
-	neural_network.backPropagation()
+	Utils.cross_validation(dataset, reg_factor, n_layers, network_weights, inputs, outputs, 10, 1)
 
 	#Only in case we want to format or reformat the original datasets to txt format required by the professor.
 	#Utils.format_datasets(['datasets/pima.tsv', 'datasets/wine.data', 'datasets/ionosphere.data'])

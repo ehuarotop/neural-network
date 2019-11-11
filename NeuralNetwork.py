@@ -1,5 +1,6 @@
 import numpy as np
 import math
+import pandas as pd
 
 def apply_sigmoid_function(activations):
 	activations = 1 / (1 + np.exp(-activations))
@@ -36,7 +37,7 @@ class NeuralNetwork:
 		self.layers = getInitialLayers(n_layers)
 		self.inputs = inputs
 		self.outputs = outputs
-		self.alpha = 0.0
+		self.alpha = 0.1
 		self.stop = False
 		self.stop_criteria = 0.0005
 		self.verbose = verbose
@@ -172,7 +173,7 @@ class NeuralNetwork:
 				total_gradients.append(np.zeros((layer.weights.shape)))
 
 		############################# Iterating over backpropagation #############################
-		for iteration in range(1):
+		for iteration in range(100):
 			#if not self.stop:
 			#Printing count for current iteration
 			print("Iteration # " + str(iteration + 1))
@@ -180,24 +181,15 @@ class NeuralNetwork:
 			for index, instance in self.inputs.iterrows():
 				#Propagating the instance
 				self.propagateInstance(instance, False)
-				
-				#print('Predicted output Example ' + str(index+1), self.layers[-1].activations)
-
-				#print('Expected output Example ' + str(index+1), np.array([self.outputs.iloc[index].values]).T)
 
 				#getting deltas for the output layer
 				delta_output_layer = np.add(self.layers[-1].activations, -np.array([self.outputs.iloc[index].values]).T)
-				print('erro na saida' + str(index+1), delta_output_layer)
 				
 				self.backPropagateNetwork(delta_output_layer, False)
 
 				for index, layer in enumerate(self.layers):
 					if index != 0:
 						total_gradients[index] = np.add(total_gradients[index], layer.gradients)
-
-				print('------------------------------------------------------')
-
-			print('------------------ Dataset Completado ------------------')
 
 			for index, layer in enumerate(self.layers):
 				if index != 0:
@@ -214,13 +206,40 @@ class NeuralNetwork:
 					#assigning the regularized gradients to layer.gradients
 					layer.gradients = regularized_gradients
 
-					print('regularized gradients' + str(index+1), regularized_gradients)
-
-					#updating weights according to the calculated gradients
-					#layer.weights = layer.weights - self.alpha * layer.gradients
+					#updating weights according to the calculated gradients ######UPDATING WEIGHTS
+					layer.weights = layer.weights - self.alpha * layer.gradients
 
 			new_regularized_J = self.getRegularized_J(False)
-			print('J total do dataset', new_regularized_J)
+			#print('Final J for dataset', new_regularized_J)
+
+	def predict(self, instances):
+		predictions = []
+
+		#Receives a set of instances to be predicted
+		for index, instance in instances.iterrows():
+			self.propagateInstance(instance, False)
+			predicted_probabilities = self.layers[-1].activations
+
+			maximum = 0
+			max_index = 0
+			for index, predicted_proba in enumerate(predicted_probabilities):
+				if predicted_proba[0] > maximum:
+					maximum = predicted_proba[0]
+					max_index = index
+
+			prediction = []
+			for index, predicted_proba in enumerate(predicted_probabilities):
+				if index == max_index:
+					predicted_proba[0] = 1.0
+				else:
+					predicted_proba[0] = 0.0
+
+				prediction.append(predicted_proba[0])
+
+			predictions.append(prediction)
+
+		#returning predictions as a dataframe considering the indices of the instances
+		return pd.DataFrame(predictions).set_index(instances.index)
 
 	def numerical_verification(self, weights, epsilon):
 		#Getting a copy of the weights for the current layer
