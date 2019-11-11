@@ -40,6 +40,8 @@ class NeuralNetwork:
 		self.alpha = 0.01
 		self.stop = False
 		self.stop_criteria = 0.0005
+		self.patience = 0
+		self.max_patience = 100
 		self.batch_size = 50
 		self.verbose = verbose
 
@@ -161,9 +163,8 @@ class NeuralNetwork:
 		return regularizedError
 
 	def backPropagation(self):
-
 		#Getting first regularized cost
-		#regularized_J = self.getRegularized_J()
+		regularized_J = self.getRegularized_J(False)
 
 		total_gradients = []
 
@@ -174,61 +175,71 @@ class NeuralNetwork:
 				total_gradients.append(np.zeros((layer.weights.shape)))
 
 		############################# Iterating over backpropagation #############################
-		for iteration in range(100):
-			#if not self.stop:
-			#Printing count for current iteration
-			print("Iteration # " + str(iteration + 1))
+		for iteration in range(1000):
+			if not self.stop:
+				#Printing count for current iteration
+				print("Iteration # " + str(iteration + 1))
 
-			#Getting batches
-			batches = []
-			n_batches = self.inputs.shape[0] // self.batch_size
-			init = 0
-			end = init + self.batch_size
+				#Getting batches
+				batches = []
+				n_batches = self.inputs.shape[0] // self.batch_size
+				init = 0
+				end = init + self.batch_size
 
-			for i in range(n_batches+1):
-				if i == n_batches:
-					batch = self.inputs.iloc[init:]
-				else:
-					batch = self.inputs.iloc[init:end]
-				
-				batches.append(batch)
-				init = end
-				end += self.batch_size
-
-			for batch in batches:
-				for index, instance in batch.iterrows(): #self.inputs.iterrows()
-					#Propagating the instance
-					self.propagateInstance(instance, False)
-
-					#getting deltas for the output layer
-					delta_output_layer = np.add(self.layers[-1].activations, -np.array([self.outputs.iloc[index].values]).T)
+				for i in range(n_batches+1):
+					if i == n_batches:
+						batch = self.inputs.iloc[init:]
+					else:
+						batch = self.inputs.iloc[init:end]
 					
-					self.backPropagateNetwork(delta_output_layer, False)
+					batches.append(batch)
+					init = end
+					end += self.batch_size
+
+				for batch in batches:
+					for index, instance in batch.iterrows(): #self.inputs.iterrows()
+						#Propagating the instance
+						self.propagateInstance(instance, False)
+
+						#getting deltas for the output layer
+						delta_output_layer = np.add(self.layers[-1].activations, -np.array([self.outputs.iloc[index].values]).T)
+						
+						self.backPropagateNetwork(delta_output_layer, False)
+
+						for index, layer in enumerate(self.layers):
+							if index != 0:
+								total_gradients[index] = np.add(total_gradients[index], layer.gradients)
 
 					for index, layer in enumerate(self.layers):
 						if index != 0:
-							total_gradients[index] = np.add(total_gradients[index], layer.gradients)
+							#Getting a copy of the weights for the current layer
+							weights = np.copy(layer.weights)
+							#setting bias column to zero (regularization does not consider bias)
+							weights[:,0] = 0
+							#applying regularization factor over the weights array
+							weights = weights*self.reg_factor
 
-				for index, layer in enumerate(self.layers):
-					if index != 0:
-						#Getting a copy of the weights for the current layer
-						weights = np.copy(layer.weights)
-						#setting bias column to zero (regularization does not consider bias)
-						weights[:,0] = 0
-						#applying regularization factor over the weights array
-						weights = weights*self.reg_factor
+							#getting regularized gradients (from total_gradients):
+							regularized_gradients = np.add(total_gradients[index], weights) / self.inputs.shape[0]
 
-						#getting regularized gradients (from total_gradients):
-						regularized_gradients = np.add(total_gradients[index], weights) / self.inputs.shape[0]
+							#assigning the regularized gradients to layer.gradients
+							layer.gradients = regularized_gradients
 
-						#assigning the regularized gradients to layer.gradients
-						layer.gradients = regularized_gradients
+							#updating weights according to the calculated gradients ######UPDATING WEIGHTS
+							layer.weights = layer.weights - self.alpha * layer.gradients
 
-						#updating weights according to the calculated gradients ######UPDATING WEIGHTS
-						layer.weights = layer.weights - self.alpha * layer.gradients
+					#Getting the new regularized error after updating weights
+					new_regularized_J = self.getRegularized_J(False)
 
-				new_regularized_J = self.getRegularized_J(False)
-				print('Final J for dataset', new_regularized_J)
+					if new_regularized_J - regularized_J < self.stop_criteria:
+						self.patience += 1
+						print(new_regularized_J, regularized_J, self.patience)
+						regularized_J = new_regularized_J
+						if self.patience == self.max_patience:
+							self.stop = True
+					else:
+						self.patience = 0
+				
 
 	def predict(self, instances):
 		predictions = []
