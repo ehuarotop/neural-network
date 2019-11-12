@@ -70,6 +70,9 @@ def parser_initial_weights_file(initial_weights_file):
 		#saving weights for each layer
 		network_weights.append(layer_weights)
 
+	#converting network_weights from list of list to 2D np.array 
+	network_weights = np.array([np.array(xi) for xi in network_weights])
+
 	return network_weights
 
 def format_datasets(csv_files):
@@ -230,8 +233,11 @@ def cross_validation(dataset_name, reg_factor, n_layers, network_weights, inputs
 		for index, unique_output in unique_outputs.iterrows():
 			class_indexes = []
 			for index2,output in outputs.iterrows():
-				#Verifying if the rows are equal between output and unique_output.
-				if unique_output.eq(output).drop_duplicates().shape[0] == 1:
+				#Verifying if the rows are equal between output and unique_output. (3 classes)
+				if unique_output.shape[0] == 3 and unique_output.eq(output).drop_duplicates().shape[0] == 1:
+					class_indexes.append(index2)
+				#Verification for 2 classes
+				elif unique_output.shape[0] == 2 and unique_output.eq(output).drop_duplicates().iloc[0] == True:
 					class_indexes.append(index2)
 
 			#Appending part of the dataframe for the corresponding class_indexes to data_classes
@@ -260,7 +266,8 @@ def cross_validation(dataset_name, reg_factor, n_layers, network_weights, inputs
 			#Instantiating Neural Network object
 			neural_network = nn(reg_factor, n_layers, network_weights, 
 									training_data.reset_index(drop=True), 
-									outputs.iloc[list(training_data.index)].reset_index(drop=True),False)
+									outputs.iloc[list(training_data.index)].reset_index(drop=True),
+									0.25, 0.9, 0.0000005, 25, 50, 200, False, False)
 
 			#Fitting the neural network model
 			neural_network.backPropagation()
@@ -305,10 +312,16 @@ def getConfusionMatrix(predictions, test_data, outputs, unique_outputs):
 	
 	for index,row in predictions.iterrows():
 		for index2, unique_output in unique_outputs.iterrows():
-			if unique_output.eq(row).drop_duplicates().shape[0] == 1:
-				x_val = index2
-			if unique_output.eq(outputs.iloc[index]).drop_duplicates().shape[0] == 1:
-				y_val = index2
+			if unique_output.shape[0] == 3:
+				if unique_output.eq(row).drop_duplicates().shape[0] == 1:
+					x_val = index2
+				if unique_output.eq(outputs.iloc[index]).drop_duplicates().shape[0] == 1:
+					y_val = index2
+			elif unique_output.shape[0] == 2:
+				if unique_output.eq(row).drop_duplicates().iloc[0] == True:
+					x_val = index2
+				if unique_output.eq(outputs.iloc[index]).drop_duplicates().iloc[0] == True:
+					y_val = index2
 
 		confusion_matrix[x_val][y_val] += 1
 

@@ -15,7 +15,7 @@ class Layer:
 		self.deltas = np.zeros((self.n_neurons,1))
 
 class NeuralNetwork:
-	def __init__(self, reg_factor, n_layers, initial_weights, inputs, outputs, verbose):
+	def __init__(self, reg_factor, n_layers, initial_weights, inputs, outputs, alpha, beta, stop_criteria, max_patience, batch_size, max_iterations, momentum, verbose):
 		
 		def getInitialLayers(n_layers):
 			layers = []
@@ -24,9 +24,9 @@ class NeuralNetwork:
 				if index == 0:
 					layer = Layer('input', n_layer, None, None, False)
 				elif index == len(n_layers) - 1:
-					layer = Layer('output', n_layer, np.array(initial_weights[index-1]), None, True)
+					layer = Layer('output', n_layer, initial_weights[index-1], None, True)
 				else:
-					layer = Layer('middle', n_layer, np.array(initial_weights[index-1]), None, True)
+					layer = Layer('middle', n_layer, initial_weights[index-1], None, True)
 
 				layers.append(layer)
 
@@ -37,12 +37,15 @@ class NeuralNetwork:
 		self.layers = getInitialLayers(n_layers)
 		self.inputs = inputs
 		self.outputs = outputs
-		self.alpha = 0.01
+		self.alpha = alpha
+		self.beta = beta
 		self.stop = False
-		self.stop_criteria = 0.0005
+		self.stop_criteria = stop_criteria
 		self.patience = 0
-		self.max_patience = 100
-		self.batch_size = 50
+		self.max_patience = max_patience
+		self.batch_size = batch_size
+		self.max_iterations = max_iterations
+		self.momentum = momentum
 		self.verbose = verbose
 
 
@@ -163,19 +166,24 @@ class NeuralNetwork:
 		return regularizedError
 
 	def backPropagation(self):
+		num_calc_gradients = 0
+
 		#Getting first regularized cost
 		regularized_J = self.getRegularized_J(False)
 
 		total_gradients = []
+		accumulated_gradients = []
 
 		for index, layer in enumerate(self.layers):
 			if index == 0:
 				total_gradients.append(None)
+				accumulated_gradients.append(None)
 			else:
 				total_gradients.append(np.zeros((layer.weights.shape)))
+				accumulated_gradients.append(np.zeros((layer.weights.shape)))
 
 		############################# Iterating over backpropagation #############################
-		for iteration in range(1000):
+		for iteration in range(self.max_iterations):
 			if not self.stop:
 				#Printing count for current iteration
 				print("Iteration # " + str(iteration + 1))
@@ -225,8 +233,22 @@ class NeuralNetwork:
 							#assigning the regularized gradients to layer.gradients
 							layer.gradients = regularized_gradients
 
-							#updating weights according to the calculated gradients ######UPDATING WEIGHTS
-							layer.weights = layer.weights - self.alpha * layer.gradients
+							if self.momentum:
+								#incrementing the number of gradients calculated until this moment
+								num_calc_gradients += 1
+
+								#accumulate the calculated gradients
+								accumulated_gradients[index] = np.add(accumulated_gradients[index], layer.gradients)
+
+								#Calculating the z direction based on the mean gradients and 
+								z_direction = self.beta * (accumulated_gradients[index] / num_calc_gradients) + layer.gradients
+
+								#updating weights
+								layer.weights = layer.weights - self.alpha * z_direction
+
+							else:
+								#updating weights according to the calculated gradients ######UPDATING WEIGHTS
+								layer.weights = layer.weights - self.alpha * layer.gradients
 
 					#Getting the new regularized error after updating weights
 					new_regularized_J = self.getRegularized_J(False)
@@ -238,6 +260,7 @@ class NeuralNetwork:
 						if self.patience == self.max_patience:
 							self.stop = True
 					else:
+						print(new_regularized_J)
 						self.patience = 0
 				
 
