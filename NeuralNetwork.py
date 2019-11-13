@@ -1,6 +1,7 @@
 import numpy as np
 import math
 import pandas as pd
+import sys
 
 def apply_sigmoid_function(activations):
 	activations = 1 / (1 + np.exp(-activations))
@@ -51,9 +52,15 @@ class NeuralNetwork:
 
 	def propagateInstance(self, instance, verbose):
 		#Instantiating activations (plus bias) for the first layer (input layer)
+		#print(self.layers[0].activations)
+		#print(instance)
+		#print(instance.values)
 		self.layers[0].activations = np.insert(np.array([instance.values]), 0, 1.0, axis=1).T
 		if verbose:
 			print('\t\ta1: ', self.layers[0].activations.T[0])
+
+		#print(self.layers[0].activations)
+		#sys.exit(0)
 
 		for index, layer in enumerate(self.layers):
 			#Calculating propagation
@@ -64,6 +71,8 @@ class NeuralNetwork:
 				activations of the previous layer (self.layers[index-1]). layer.activations are saved
 				in his transpose form in order to maintain the operation fixed.
 				'''
+				#print(layer.weights)
+				#print(self.layers[index-1].activations)
 				layer.activations = np.dot(layer.weights, self.layers[index-1].activations)
 				if verbose:
 					print('\t\tz'+str(index+1)+': ', layer.activations.T[0])
@@ -154,7 +163,6 @@ class NeuralNetwork:
 		for index, instance in self.inputs.iterrows():
 			#getting J (cost function) for the current instance
 			error = self.propagateInstanceAndGetOutputLayerError(instance, self.layers[-1], self.outputs.iloc[index],verbose)
-			#print('erro J ' + str(index+1), error)
 
 			#Adding the J (cost function) for the current instance to the output_layer_errors variable
 			J += error
@@ -170,6 +178,8 @@ class NeuralNetwork:
 
 		#Getting first regularized cost
 		regularized_J = self.getRegularized_J(False)
+		#print(regularized_J)
+		#sys.exit(0)
 
 		total_gradients = []
 		accumulated_gradients = []
@@ -255,12 +265,12 @@ class NeuralNetwork:
 
 					if new_regularized_J - regularized_J < self.stop_criteria:
 						self.patience += 1
-						print(new_regularized_J, regularized_J, self.patience)
+						#print(new_regularized_J, regularized_J, self.patience)
 						regularized_J = new_regularized_J
 						if self.patience == self.max_patience:
 							self.stop = True
 					else:
-						print(new_regularized_J)
+						#print('regularized', new_regularized_J)
 						self.patience = 0
 				
 

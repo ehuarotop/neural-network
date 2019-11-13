@@ -182,7 +182,7 @@ def hasHeader(csv_file):
 
 def apply_standard_score(df):
 	for column in df:
-		df[column] = (df[column] - df[column].mean())/df[column].std(ddof=0)
+		df[column] = (df[column] - df[column].mean())/(df[column].std(ddof=0)+ 0.000001)
 
 	return df
 
@@ -190,21 +190,18 @@ def cross_validation(dataset_name, reg_factor, n_layers, network_weights, inputs
 	total_accuracies = []
 	total_F1s = []
 
-	#Getting the class column (assuming class column in the last column) 
-	#classe = list(data.columns.values)[-1]
+	if dataset_name == 'datasets/wine_dataset.txt':
+		unique_class_values = ['1','2','3']
+	elif dataset_name == 'datasets/ionosphere_dataset.txt':
+		unique_class_values = ['good', 'bad']
+	elif dataset_name == 'datasets/pima_dataset.txt':
+		unique_class_values = ['0','1']
 
-	#Getting actual class instances
-	#class_instances = data[classe]
+	csv_file = dataset_name[:-4] + '_' + str(reg_factor) + '_' + str(n_layers) + '-metrics.csv'
 
-	#Getting unique class instances values from class column
-	#unique_class_values = list(class_instances.unique())
-
-	#ordering the class values
-	#unique_class_values.sort()
-
-	'''if not os.path.exists(dataset_name[:-4] + '-metrics.csv'):
+	if not os.path.exists(csv_file):
 		#Bulding csv file headers line for any number of classes
-		headers_csv = ['cross_val', 'kfold', 'n_trees','accuracy']
+		headers_csv = ['cross_val', 'kfold','accuracy']
 		headers_csv += ['class_' + str(unique_class) + '_recall' for unique_class in unique_class_values]
 		headers_csv += ['mean_recall']
 		headers_csv += ['class_' + str(unique_class) + '_precision' for unique_class in unique_class_values]
@@ -212,7 +209,7 @@ def cross_validation(dataset_name, reg_factor, n_layers, network_weights, inputs
 		headers_csv += ['class_' + str(unique_class) + '_F1' for unique_class in unique_class_values]
 		headers_csv += ['mean_F1']
 
-		write_line_to_csv(dataset_name[:-4] + '-metrics.csv', headers_csv)'''
+		write_line_to_csv(csv_file, headers_csv, 'w')
 
 	for cross_val in range(n_cross_val):
 		print("Cross validation # " + str(cross_val+1))
@@ -267,7 +264,9 @@ def cross_validation(dataset_name, reg_factor, n_layers, network_weights, inputs
 			neural_network = nn(reg_factor, n_layers, network_weights, 
 									training_data.reset_index(drop=True), 
 									outputs.iloc[list(training_data.index)].reset_index(drop=True),
-									0.25, 0.9, 0.0000005, 25, 50, 200, False, False)
+									0.05, 0.9, 0.000005, 25, 50, 200, True, False)
+
+			#0.05, 0.9, 0.000005, 30, 50, 200, False, False) --- para ionosphere
 
 			#Fitting the neural network model
 			neural_network.backPropagation()
@@ -278,16 +277,16 @@ def cross_validation(dataset_name, reg_factor, n_layers, network_weights, inputs
 			#Getting confusion matrix
 			cf = getConfusionMatrix(predictions, test_data, outputs, unique_outputs)
 
-			print(cf)
+			#print(cf)
 
 			#Getting some metrics from the confusion matrix to validate the model
 			accuracy, recalls, precisions, F1s = calcMetrics(cf, unique_outputs)
 
 			#Concatenating metrics into a list to be exported to a csv file
-			#list_of_metric_values = [cross_val+1, kfold+1, n_trees] + [accuracy] + recalls + [np.mean(recalls)] + precisions + [np.mean(precisions)] + F1s + [np.mean(F1s)]
+			list_of_metric_values = [cross_val+1, kfold+1] + [accuracy] + recalls + [np.mean(recalls)] + precisions + [np.mean(precisions)] + F1s + [np.mean(F1s)]
 			
 			#Writing list of metrics computed for the current fold to a csv file.
-			#write_line_to_csv(dataset_name[:-4] + '-metrics.csv', list_of_metric_values)
+			write_line_to_csv(csv_file, list_of_metric_values, 'a')
 
 			#Collecting accuracies in order to show this information after cross validation execution.
 			accuracies.append(accuracy)
