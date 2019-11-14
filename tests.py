@@ -10,8 +10,6 @@ def call_cross_validation(dataset, reg_factor, n_layers, network_weights, inputs
 	Utils.cross_validation(dataset, reg_factor, n_layers, network_weights, inputs, outputs, kfolds, n_cross_val)
 
 @click.command()
-#@click.option('--network', required=True, type=str, help='Txt File indicating the network structure')
-#@click.option('--initial_weights', required=True, type=str, help='Txt File indicating the initial weights for the network')
 @click.option('--dataset', required=True, type=str, help='Txt file with the training set')
 def main(dataset):
 	reg_factors = [0.05,0.1,0.15]
@@ -68,15 +66,6 @@ def main(dataset):
 	#Completing jobs
 	for proc in procs:
 		proc.join()
-
-
-	#parsing network.txt file to variables with the correct data type
-	#reg_factor, n_layers = Utils.parser_network_file(network)
-
-	#parsing initial_weights.txt file to variables with the correct datatype. Last element of this list will be the output neuron
-	#network_weights = Utils.parser_initial_weights_file(initial_weights)
-
-	#Utils.cross_validation(dataset, reg_factor, n_layers, network_weights, inputs, outputs, 10, 1)
 
 if __name__ == "__main__":
 	main()

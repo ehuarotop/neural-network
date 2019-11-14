@@ -52,15 +52,9 @@ class NeuralNetwork:
 
 	def propagateInstance(self, instance, verbose):
 		#Instantiating activations (plus bias) for the first layer (input layer)
-		#print(self.layers[0].activations)
-		#print(instance)
-		#print(instance.values)
 		self.layers[0].activations = np.insert(np.array([instance.values]), 0, 1.0, axis=1).T
 		if verbose:
 			print('\t\ta1: ', self.layers[0].activations.T[0])
-
-		#print(self.layers[0].activations)
-		#sys.exit(0)
 
 		for index, layer in enumerate(self.layers):
 			#Calculating propagation
@@ -71,8 +65,6 @@ class NeuralNetwork:
 				activations of the previous layer (self.layers[index-1]). layer.activations are saved
 				in his transpose form in order to maintain the operation fixed.
 				'''
-				#print(layer.weights)
-				#print(self.layers[index-1].activations)
 				layer.activations = np.dot(layer.weights, self.layers[index-1].activations)
 				if verbose:
 					print('\t\tz'+str(index+1)+': ', layer.activations.T[0])
@@ -84,8 +76,6 @@ class NeuralNetwork:
 					layer.activations = np.insert(layer.activations, 0, 1.0, axis=0)
 					if verbose:
 						print('\t\ta'+str(index+1)+': ', layer.activations.T[0])
-
-		#return self.layers[-1].activations
 
 	def calculateErrorOutputLayer(self, output_layer, instance_outputs):
 		#Function to calculate error of a instance in a network with multiple outputs
@@ -113,7 +103,6 @@ class NeuralNetwork:
 			else:
 				deltas_current_layer = self.layers[index+1].deltas
 
-			#weighted_deltas = np.dot(self.layers[index+1].weights.T, self.layers[index+1].deltas)
 			weighted_deltas = np.dot(self.layers[index+1].weights.T, deltas_current_layer)
 			layer_activations = np.multiply(self.layers[index].activations, 1 - self.layers[index].activations)
 			
@@ -178,8 +167,6 @@ class NeuralNetwork:
 
 		#Getting first regularized cost
 		regularized_J = self.getRegularized_J(False)
-		#print(regularized_J)
-		#sys.exit(0)
 
 		total_gradients = []
 		accumulated_gradients = []
@@ -265,12 +252,10 @@ class NeuralNetwork:
 
 					if new_regularized_J - regularized_J < self.stop_criteria:
 						self.patience += 1
-						#print(new_regularized_J, regularized_J, self.patience)
 						regularized_J = new_regularized_J
 						if self.patience == self.max_patience:
 							self.stop = True
 					else:
-						#print('regularized', new_regularized_J)
 						self.patience = 0
 				
 
@@ -387,7 +372,6 @@ class NeuralNetwork:
 
 			#getting deltas for the output layer
 			delta_output_layer = np.add(self.layers[-1].activations, -np.array([self.outputs.iloc[index].values]).T)
-			#print('erro na saida' + str(index+1), delta_output_layer)
 			
 			#print('Executing Backpropagation for Example ' + str(index+1))
 			print('\tCalculating gradients based on example ' + str(index+1))

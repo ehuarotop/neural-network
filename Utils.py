@@ -169,17 +169,6 @@ def write_line_to_csv(csv_file, list_values, mode):
 		csv_writer = csv.writer(csv_file, delimiter=',', quotechar='"', quoting=csv.QUOTE_MINIMAL)
 		csv_writer.writerow(list_values)
 
-def hasHeader(csv_file):
-	with open(csv_file) as csv_file:
-		csv_reader = csv.reader(csv_file, delimiter=',')
-		for row in csv_reader:
-			if 'cross_val' in row:
-				return True
-			else:
-				return False
-
-			break
-
 def apply_standard_score(df):
 	for column in df:
 		df[column] = (df[column] - df[column].mean())/(df[column].std(ddof=0)+ 0.000001)
@@ -264,7 +253,7 @@ def cross_validation(dataset_name, reg_factor, n_layers, network_weights, inputs
 			neural_network = nn(reg_factor, n_layers, network_weights, 
 									training_data.reset_index(drop=True), 
 									outputs.iloc[list(training_data.index)].reset_index(drop=True),
-									0.05, 0.9, 0.000005, 25, 50, 200, True, False)
+									0.15, 0.9, 0.000005, 50, 50, 200, True, False)
 
 			#0.05, 0.9, 0.000005, 30, 50, 200, False, False) --- para ionosphere
 
@@ -304,7 +293,6 @@ def cross_validation(dataset_name, reg_factor, n_layers, network_weights, inputs
 
 def getConfusionMatrix(predictions, test_data, outputs, unique_outputs):
 	confusion_matrix = np.zeros((len(unique_outputs), len(unique_outputs)), dtype=int)
-	print(confusion_matrix.shape)
 
 	x_val = -1
 	y_val = -1
