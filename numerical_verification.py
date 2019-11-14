@@ -20,7 +20,10 @@ def main(network, initial_weights, dataset):
 	inputs = inputs.apply(pd.to_numeric)
 	outputs = outputs.apply(pd.to_numeric)
 
-	neural_network = nn(reg_factor, n_layers, network_weights, inputs, outputs, True)
+	#neural_network = nn(reg_factor, n_layers, network_weights, inputs, outputs, True)
+	neural_network = nn(reg_factor, n_layers, network_weights, inputs, outputs,
+									0.05, 0.9, 0.000005, 25, 50, 200, True, False)
+
 
 	neural_network.simplebackPropagationForNumericVerification()
 
