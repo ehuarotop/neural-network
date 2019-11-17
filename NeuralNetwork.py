@@ -292,9 +292,6 @@ class NeuralNetwork:
 	def numerical_verification(self, weights, epsilon):
 		#Getting a copy of the weights for the current layer
 		weights_copy = np.copy(weights)
-		
-		#setting bias column to zero (regularization does not consider bias)
-		#weights[:,0] = 0
 
 		rows, cols = weights.shape
 
@@ -409,6 +406,9 @@ class NeuralNetwork:
 				print('\tGradients calculated numerically for Theta' + str(index))
 				for num_gradient in numerical_gradients:
 					print('\t\t' + str(num_gradient))
+				print('\tError backpropagation vs numerical calculus (element-wise) ' + str(index))
+				for index,gradient in enumerate(layer.gradients):
+					print('\t\t' + str(np.subtract(numerical_gradients[index], gradient)))
 
 		new_regularized_J = self.getRegularized_J(False)
 		print('J total do dataset', new_regularized_J)

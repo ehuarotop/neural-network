@@ -255,8 +255,6 @@ def cross_validation(dataset_name, reg_factor, n_layers, network_weights, inputs
 									outputs.iloc[list(training_data.index)].reset_index(drop=True),
 									0.15, 0.9, 0.000005, 50, 50, 200, True, False)
 
-			#0.05, 0.9, 0.000005, 30, 50, 200, False, False) --- para ionosphere
-
 			#Fitting the neural network model
 			neural_network.backPropagation()
 
