@@ -1,0 +1,1 @@
+cross_val,kfold,accuracy,class_good_recall,class_bad_recall,mean_recall,class_good_precision,class_bad_precision,mean_precision,class_good_F1,class_bad_F1,mean_F1
