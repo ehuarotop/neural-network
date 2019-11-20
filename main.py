@@ -14,8 +14,6 @@ def main(network, initial_weights, dataset):
 	#parsing initial_weights.txt file to variables with the correct datatype. Last element of this list will be the output neuron
 	network_weights = Utils.parser_initial_weights_file(initial_weights)
 
-	print(network_weights)
-
 	inputs, outputs = Utils.get_data_from_txt(dataset)
 
 	#converting datasets to numeric from string

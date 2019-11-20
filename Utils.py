@@ -253,7 +253,7 @@ def cross_validation(dataset_name, reg_factor, n_layers, network_weights, inputs
 			neural_network = nn(reg_factor, n_layers, network_weights, 
 									training_data.reset_index(drop=True), 
 									outputs.iloc[list(training_data.index)].reset_index(drop=True),
-									0.15, 0.9, 0.000005, 50, 50, 200, True, False)
+									0.10, 0.9, 0.000005, 800, 50, 200, True, False)
 
 			#Fitting the neural network model
 			neural_network.backPropagation()

@@ -1,0 +1,2 @@
+cross_val,kfold,accuracy,class_0_recall,class_1_recall,mean_recall,class_0_precision,class_1_precision,mean_precision,class_0_F1,class_1_F1,mean_F1
+1,1,0.7142857142857143,0.56,0.7884615384615384,0.6742307692307692,0.56,0.7884615384615384,0.6742307692307692,0.56,0.7884615384615384,0.6742307692307692

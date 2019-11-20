@@ -85,7 +85,7 @@ class NeuralNetwork:
 		real_outputs = np.array([instance_outputs.values]).T 			#np.array(column vector)
 
 		error = np.sum(np.add(np.multiply(-real_outputs, np.log(output_layer_activations)),
-						np.multiply(-(1-real_outputs), np.log(1-output_layer_activations))))
+						np.multiply(-(1-real_outputs), np.log(1-output_layer_activations + 0.000005))))
 
 		return error
 
@@ -163,20 +163,23 @@ class NeuralNetwork:
 		return regularizedError
 
 	def backPropagation(self):
+		J_function_points = []
+
 		num_calc_gradients = 0
 
 		#Getting first regularized cost
 		regularized_J = self.getRegularized_J(False)
+		J_function_points.append([0,regularized_J])
 
 		total_gradients = []
 		accumulated_gradients = []
 
 		for index, layer in enumerate(self.layers):
 			if index == 0:
-				total_gradients.append(None)
+				#total_gradients.append(None)
 				accumulated_gradients.append(None)
 			else:
-				total_gradients.append(np.zeros((layer.weights.shape)))
+				#total_gradients.append(np.zeros((layer.weights.shape)))
 				accumulated_gradients.append(np.zeros((layer.weights.shape)))
 
 		############################# Iterating over backpropagation #############################
@@ -202,6 +205,15 @@ class NeuralNetwork:
 					end += self.batch_size
 
 				for batch in batches:
+					total_gradients = []
+					for index, layer in enumerate(self.layers):
+						if index == 0:
+							total_gradients.append(None)
+							#accumulated_gradients.append(None)
+						else:
+							total_gradients.append(np.zeros((layer.weights.shape)))
+							#accumulated_gradients.append(np.zeros((layer.weights.shape)))
+
 					for index, instance in batch.iterrows(): #self.inputs.iterrows()
 						#Propagating the instance
 						self.propagateInstance(instance, False)
@@ -225,7 +237,7 @@ class NeuralNetwork:
 							weights = weights*self.reg_factor
 
 							#getting regularized gradients (from total_gradients):
-							regularized_gradients = np.add(total_gradients[index], weights) / self.inputs.shape[0]
+							regularized_gradients = np.add(total_gradients[index], weights) / self.batch_size #self.inputs.shape[0]
 
 							#assigning the regularized gradients to layer.gradients
 							layer.gradients = regularized_gradients
@@ -249,6 +261,8 @@ class NeuralNetwork:
 
 					#Getting the new regularized error after updating weights
 					new_regularized_J = self.getRegularized_J(False)
+					#print(new_regularized_J)
+					J_function_points.append([iteration+1, new_regularized_J])
 
 					if new_regularized_J - regularized_J < self.stop_criteria:
 						self.patience += 1
@@ -257,6 +271,8 @@ class NeuralNetwork:
 							self.stop = True
 					else:
 						self.patience = 0
+
+		#print(J_function_points)
 				
 
 	def predict(self, instances):
