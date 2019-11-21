@@ -163,13 +163,10 @@ class NeuralNetwork:
 		return regularizedError
 
 	def backPropagation(self):
-		J_function_points = []
-
 		num_calc_gradients = 0
 
 		#Getting first regularized cost
 		regularized_J = self.getRegularized_J(False)
-		J_function_points.append([0,regularized_J])
 
 		total_gradients = []
 		accumulated_gradients = []
@@ -261,8 +258,6 @@ class NeuralNetwork:
 
 					#Getting the new regularized error after updating weights
 					new_regularized_J = self.getRegularized_J(False)
-					#print(new_regularized_J)
-					J_function_points.append([iteration+1, new_regularized_J])
 
 					if new_regularized_J - regularized_J < self.stop_criteria:
 						self.patience += 1
@@ -428,4 +423,76 @@ class NeuralNetwork:
 
 		new_regularized_J = self.getRegularized_J(False)
 		print('J total do dataset', new_regularized_J)
+
+	def graphCostFunction(self, batch_size):
+		J_values = []
+
+		#Getting batches
+		batches = []
+		n_batches = self.inputs.shape[0] // batch_size
+		init = 0
+		end = init + batch_size
+
+		for i in range(n_batches+1):
+			if i == n_batches:
+				batch = self.inputs.iloc[init:]
+			else:
+				batch = self.inputs.iloc[init:end]
+			
+			batches.append(batch)
+			init = end
+			end += batch_size
+
+		for batch in batches:
+			total_gradients = []
+			for index, layer in enumerate(self.layers):
+				if index == 0:
+					total_gradients.append(None)
+					#accumulated_gradients.append(None)
+				else:
+					total_gradients.append(np.zeros((layer.weights.shape)))
+					#accumulated_gradients.append(np.zeros((layer.weights.shape)))
+
+			for index, instance in batch.iterrows(): #self.inputs.iterrows()
+				#Propagating the instance
+				self.propagateInstance(instance, False)
+
+				#getting deltas for the output layer
+				delta_output_layer = np.add(self.layers[-1].activations, -np.array([self.outputs.iloc[index].values]).T)
+				
+				self.backPropagateNetwork(delta_output_layer, False)
+
+				for index, layer in enumerate(self.layers):
+					if index != 0:
+						total_gradients[index] = np.add(total_gradients[index], layer.gradients)
+
+			for index, layer in enumerate(self.layers):
+				if index != 0:
+					#Getting a copy of the weights for the current layer
+					weights = np.copy(layer.weights)
+					#setting bias column to zero (regularization does not consider bias)
+					weights[:,0] = 0
+					#applying regularization factor over the weights array
+					weights = weights*self.reg_factor
+
+					#getting regularized gradients (from total_gradients):
+					regularized_gradients = np.add(total_gradients[index], weights) / batch_size #self.inputs.shape[0]
+
+					#assigning the regularized gradients to layer.gradients
+					layer.gradients = regularized_gradients
+
+					#updating weights according to the calculated gradients ######UPDATING WEIGHTS
+					layer.weights = layer.weights - self.alpha * layer.gradients
+
+			#Getting the new regularized error after updating weights
+			new_regularized_J = self.getRegularized_J(False)
+			J_values.append(new_regularized_J)
+
+		return J_values
+
+
+
+
+
+
 
