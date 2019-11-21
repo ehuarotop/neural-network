@@ -37,6 +37,7 @@ def main(network, initial_weights, dataset, batch_size):
 
 	x = np.array([str(int(batch_size)*x) for x in range(1, len(J_values) + 1)])
 
+	plt.figure(figsize=(10,6))
 	plt.title('Gráfico da Função de custo J - ' + batch_size + ' instâncias')
 	plt.ylabel('J value')
 	plt.xlabel('# Instância')

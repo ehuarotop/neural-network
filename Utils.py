@@ -70,8 +70,14 @@ def parser_initial_weights_file(initial_weights_file):
 		#saving weights for each layer
 		network_weights.append(layer_weights)
 
+	#for x in network_weights:
+	#	print(type(x), len(x), len(x[0]))
+	#	a = np.array(x)
+	#	print('gaaa')
+
 	#converting network_weights from list of list to 2D np.array 
-	network_weights = np.array([np.array(xi) for xi in network_weights])
+	#network_weights = np.array([np.array(xi) for xi in network_weights])
+	network_weights = [np.array(xi) for xi in network_weights]
 
 	return network_weights
 
@@ -253,7 +259,7 @@ def cross_validation(dataset_name, reg_factor, n_layers, network_weights, inputs
 			neural_network = nn(reg_factor, n_layers, network_weights, 
 									training_data.reset_index(drop=True), 
 									outputs.iloc[list(training_data.index)].reset_index(drop=True),
-									0.10, 0.9, 0.000005, 800, 50, 200, True, False)
+									0.20, 0.9, 0.000005, 800, 50, 200, True, False)
 
 			#Fitting the neural network model
 			neural_network.backPropagation()

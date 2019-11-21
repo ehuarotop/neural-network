@@ -1,3 +1,0 @@
-pima 413 min 363m27,750s
-wine_dataset 30 min, real    33m2,713s .... 23min
-ionosphere 102m30,923s, 101m56,118s 60m39,557s
