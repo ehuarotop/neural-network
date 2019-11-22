@@ -7,7 +7,6 @@ from NeuralNetwork import NeuralNetwork as nn
 
 def get_data_from_txt(csv_file):
 	#reading dataset from csv
-	#data = pd.read_csv(csv_file, sep)
 	lines = open(csv_file,'r').readlines()
 
 	inputs = []
@@ -70,13 +69,7 @@ def parser_initial_weights_file(initial_weights_file):
 		#saving weights for each layer
 		network_weights.append(layer_weights)
 
-	#for x in network_weights:
-	#	print(type(x), len(x), len(x[0]))
-	#	a = np.array(x)
-	#	print('gaaa')
-
 	#converting network_weights from list of list to 2D np.array 
-	#network_weights = np.array([np.array(xi) for xi in network_weights])
 	network_weights = [np.array(xi) for xi in network_weights]
 
 	return network_weights

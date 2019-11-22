@@ -81,8 +81,8 @@ class NeuralNetwork:
 		#Function to calculate error of a instance in a network with multiple outputs
 
 		#getting activations of the output layer
-		output_layer_activations = output_layer.activations 			#np.array(column vector)
-		real_outputs = np.array([instance_outputs.values]).T 			#np.array(column vector)
+		output_layer_activations = output_layer.activations 
+		real_outputs = np.array([instance_outputs.values]).T 			
 
 		error = np.sum(np.add(np.multiply(-real_outputs, np.log(output_layer_activations)),
 						np.multiply(-(1-real_outputs), np.log(1-output_layer_activations + 0.000005))))
@@ -266,9 +266,6 @@ class NeuralNetwork:
 							self.stop = True
 					else:
 						self.patience = 0
-
-		#print(J_function_points)
-				
 
 	def predict(self, instances):
 		predictions = []

@@ -29,7 +29,7 @@ def main(dataset):
 
 	network_confs = []
 
-	#for reg_factor in reg_factors:
+	#generating final network structure
 	for num_layer in num_layers:
 		if num_layer == 1:
 			for i in itertools.product(neurons_per_layer):
@@ -49,6 +49,7 @@ def main(dataset):
 					network_confs.append([34] + list(i) + [2])
 
 
+	#generating weights and instantiating parallel processes
 	for reg_factor in reg_factors:
 		for network_conf in network_confs:
 			network_weights = []

@@ -45,7 +45,5 @@ def main(network, initial_weights, dataset, batch_size):
 	plt.savefig('cost_function_' + os.path.basename(dataset) + '.png')
 	plt.close()
 
-	#Utils.cross_validation(dataset, reg_factor, n_layers, network_weights, inputs, outputs, 10, 1)
-
 if __name__ == "__main__":
 	main()
